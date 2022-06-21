@@ -1,0 +1,18 @@
+Directive ::= DirectiveItem+
+
+DirectiveItem ::= GateDef | LinkDef
+
+GateDef ::= "define" GateIdentifier "as" GateTy
+
+GateTy ::= "not"
+	| "and"
+	| "or"
+	| "xor"
+	| "nand"
+	| "nor"
+
+GateIdentifier ::= [a-z_]+
+
+LinkDef ::= GateIdentifier "->" GateIdentifier "input" InputIdentifier
+
+InputIdentifier ::= [a-z]
