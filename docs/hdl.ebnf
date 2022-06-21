@@ -2,7 +2,7 @@ Directive ::= DirectiveItem+
 
 DirectiveItem ::= GateDef | LinkDef
 
-GateDef ::= "define" GateIdentifier "as" GateTy
+GateDef ::= "DEFINE" GateIdentifier "AS" GateTy
 
 GateTy ::= "not"
 	| "and"
@@ -13,6 +13,6 @@ GateTy ::= "not"
 
 GateIdentifier ::= [a-z_]+
 
-LinkDef ::= GateIdentifier "->" GateIdentifier "input" InputIdentifier
+LinkDef ::= GateIdentifier "->" "INPUT" InputIdentifier "OF" GateIdentifier 
 
 InputIdentifier ::= [a-z]
