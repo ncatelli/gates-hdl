@@ -1,5 +1,5 @@
 #[derive(Debug, PartialEq)]
-pub struct Definition(Vec<Directive>);
+pub struct Definition(pub Vec<Directive>);
 
 #[derive(Debug, PartialEq)]
 pub struct Directive(pub DirectiveItem);
@@ -51,8 +51,18 @@ pub struct GateIdentifier(String);
 
 impl GateIdentifier {
     pub fn try_new(s: String) -> Option<Self> {
-        // c.is_ascii_lowercase().then(|| Self(c))
-        None
+        let head_is_valid = s
+            .chars()
+            .next()
+            .map(|c| c.is_ascii_lowercase())
+            .unwrap_or(false);
+        let tail_is_valid = s.chars().skip(1).all(|c| c.is_ascii_lowercase());
+
+        if head_is_valid && tail_is_valid {
+            Some(GateIdentifier(s))
+        } else {
+            None
+        }
     }
 
     pub fn try_new_unchecked(s: String) -> Self {
@@ -83,6 +93,12 @@ pub struct LinkDef {
     src: GateIdentifier,
     dest: GateIdentifier,
     input: InputIdentifier,
+}
+
+impl LinkDef {
+    pub fn new(src: GateIdentifier, dest: GateIdentifier, input: InputIdentifier) -> Self {
+        Self { src, dest, input }
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
