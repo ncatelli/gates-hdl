@@ -1,4 +1,6 @@
-Directive ::= DirectiveItem+
+Definition ::= Directive+
+
+Directive ::= DirectiveItem
 
 DirectiveItem ::= GateDef | LinkDef
 
