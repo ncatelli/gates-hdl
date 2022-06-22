@@ -1,4 +1,4 @@
-mod compile;
+mod compiler;
 mod parser;
 mod type_check;
 
