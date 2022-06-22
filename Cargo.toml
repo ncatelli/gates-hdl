@@ -7,3 +7,5 @@ edition = "2021"
 
 [dependencies]
 parcel = { git = "https://github.com/ncatelli/parcel", tag = "v2.0.1" }
+serde = { version = "1.0", features = ["derive"] }
+serde_yaml = "0.8"

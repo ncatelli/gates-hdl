@@ -1,7 +1,7 @@
 use parcel::parsers::character::{any_character, expect_character, expect_str};
 use parcel::prelude::v1::*;
 
-mod ast;
+pub mod ast;
 
 #[derive(PartialEq)]
 #[allow(unused)]
