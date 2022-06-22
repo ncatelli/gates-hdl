@@ -79,6 +79,14 @@ impl Default for HealthCheck {
     }
 }
 
+impl crate::compiler::Compile for Compose {
+    type Input = crate::type_check::BuildContext;
+
+    fn compile(_input: Self::Input) -> Result<Self, String> {
+        todo!()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -150,13 +158,5 @@ healthcheck:
             .to_string()),
             out
         )
-    }
-}
-
-impl crate::compiler::Compile for Compose {
-    type Input = crate::type_check::BuildContext;
-
-    fn compile(input: Self::Input) -> Result<Self, String> {
-        todo!()
     }
 }
