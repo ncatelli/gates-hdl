@@ -121,3 +121,83 @@ where
         parcel::left(parcel::join(parser, parcel::zero_or_more(whitespace()))),
     ))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::ast::*;
+    use super::*;
+
+    #[test]
+    fn should_parse_known_good_directive_varients() {
+        let inputs = vec![
+            // gate definition
+            (
+                "DEFINE gate AS and",
+                DirectiveItem::GateDef(GateDef::new(
+                    GateIdentifier::try_new_unchecked("gate".to_string()),
+                    GateTy::And,
+                )),
+            ),
+            // link definition
+            (
+                "LINK src -> a OF dest",
+                DirectiveItem::LinkDef(LinkDef::new(
+                    GateIdentifier::try_new_unchecked("src".to_string()),
+                    GateIdentifier::try_new_unchecked("dest".to_string()),
+                    InputIdentifier('a'),
+                )),
+            ),
+        ];
+
+        for (test_id, (input, expected_res)) in inputs.into_iter().enumerate() {
+            let parse_result = parse(&input);
+            assert_eq!(
+                (test_id, Ok(Definition(vec![Directive(expected_res)]))),
+                (test_id, parse_result)
+            )
+        }
+    }
+
+    #[test]
+    fn should_parse_multiline_definition() {
+        let (input, expected) = (
+            "DEFINE src AS and
+DEFINE dest AS not
+LINK src -> a OF dest",
+            vec![
+                Directive(DirectiveItem::GateDef(GateDef::new(
+                    GateIdentifier::try_new_unchecked("src".to_string()),
+                    GateTy::And,
+                ))),
+                Directive(DirectiveItem::GateDef(GateDef::new(
+                    GateIdentifier::try_new_unchecked("dest".to_string()),
+                    GateTy::Not,
+                ))),
+                Directive(DirectiveItem::LinkDef(LinkDef::new(
+                    GateIdentifier::try_new_unchecked("src".to_string()),
+                    GateIdentifier::try_new_unchecked("dest".to_string()),
+                    InputIdentifier('a'),
+                ))),
+            ],
+        );
+
+        let parse_result = parse(&input);
+        assert_eq!(Ok(Definition(expected)), parse_result)
+    }
+
+    #[test]
+    fn should_fail_to_parse_gate_definition_with_invalid_id() {
+        let input = "DEFINE InVaLiD AS and";
+
+        let parse_result = parse(&input);
+        assert!(parse_result.is_err())
+    }
+
+    #[test]
+    fn should_fail_to_parse_link_definition_with_invalid_input_id() {
+        let input = "LINK src -> 1 OF dest";
+
+        let parse_result = parse(&input);
+        assert!(parse_result.is_err())
+    }
+}

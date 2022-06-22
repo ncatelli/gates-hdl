@@ -103,7 +103,7 @@ impl LinkDef {
 
 #[derive(Debug, PartialEq, Eq)]
 #[repr(transparent)]
-pub struct InputIdentifier(char);
+pub struct InputIdentifier(pub char);
 
 impl InputIdentifier {
     pub fn try_new(c: char) -> Option<Self> {
