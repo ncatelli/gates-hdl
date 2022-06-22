@@ -10,10 +10,10 @@ struct Compose {
 impl Compose {
     const VERSION: &'static str = "3";
 
-    fn new() -> Self {
+    fn new(services: HashMap<String, Service>) -> Self {
         Self {
             version: Self::VERSION,
-            services: HashMap::default(),
+            services,
         }
     }
 }
@@ -82,8 +82,31 @@ impl Default for HealthCheck {
 impl crate::compiler::Compile for Compose {
     type Input = crate::type_check::BuildContext;
 
-    fn compile(_input: Self::Input) -> Result<Self, String> {
-        todo!()
+    fn compile(input: Self::Input) -> Result<Self, String> {
+        let (mappings, gates, links) = input.into_raw_parts();
+        let gate_services = mappings
+            .into_keys()
+            .zip(gates.iter())
+            .zip(links.into_iter())
+            .map(|((id, ty), links)| {
+                let outbound_destinations = links
+                    .into_iter()
+                    .map(|link| (link.dest, link.input))
+                    .collect();
+
+                let cmd = Command::new(ty.as_str().to_string(), outbound_destinations);
+                let svc = Service::new(cmd, HealthCheck::default());
+                (id, svc)
+            })
+            .fold(
+                HashMap::default(),
+                |mut acc: HashMap<String, Service>, (id, svc)| {
+                    acc.insert(id, svc);
+                    acc
+                },
+            );
+
+        Ok(Compose::new(gate_services))
     }
 }
 
@@ -93,7 +116,7 @@ mod tests {
 
     #[test]
     fn should_serialize_to_valid_compose_file() {
-        let compose = Compose::new();
+        let compose = Compose::new(HashMap::default());
 
         let out = serde_yaml::to_string(&compose).map_err(|_| ());
         assert_eq!(
@@ -114,7 +137,7 @@ services: {}
         let out = serde_yaml::to_string(&service).map_err(|_| ());
         assert_eq!(
             Ok("---
-image: \"ghcr.io/ncatelli/gates:latest\"
+image: \"ghcr.io/ncatelli/gates:main\"
 command: \"not -listen-addr '0.0.0.0:8080'\"
 healthcheck:
   test: \"CMD curl -f http://127.0.0.1:8080/healthcheck\"
@@ -132,7 +155,7 @@ healthcheck:
         let out = serde_yaml::to_string(&service).map_err(|_| ());
         assert_eq!(
             Ok("---
-image: \"ghcr.io/ncatelli/gates:latest\"
+image: \"ghcr.io/ncatelli/gates:main\"
 command: \"not -listen-addr '0.0.0.0:8080' -output-addrs 'http://and_gate:8080/input/a'\"
 healthcheck:
   test: \"CMD curl -f http://127.0.0.1:8080/healthcheck\"
@@ -150,7 +173,7 @@ healthcheck:
         let out = serde_yaml::to_string(&service).map_err(|_| ());
         assert_eq!(
             Ok("---
-image: \"ghcr.io/ncatelli/gates:latest\"
+image: \"ghcr.io/ncatelli/gates:main\"
 command: \"not -listen-addr '0.0.0.0:8080' -output-addrs 'http://and_gate:8080/input/a,http://or_gate:8080/input/b'\"
 healthcheck:
   test: \"CMD curl -f http://127.0.0.1:8080/healthcheck\"

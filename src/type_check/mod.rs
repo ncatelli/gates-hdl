@@ -1,5 +1,5 @@
 use crate::parser::ast;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 pub struct Gate {
     ty: ast::GateTy,
@@ -20,13 +20,23 @@ impl Gate {
             | ast::GateTy::Nor => 2,
         }
     }
+
+    pub fn as_str(&self) -> &'static str {
+        self.ty.into()
+    }
 }
 
-#[derive(Debug, Hash, PartialEq, Eq)]
+impl AsRef<str> for Gate {
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+
+#[derive(Debug, Hash, Clone, PartialEq, Eq)]
 pub struct Link {
-    src: String,
-    dest: String,
-    input: char,
+    pub src: String,
+    pub dest: String,
+    pub input: char,
 }
 
 impl Link {
@@ -47,66 +57,90 @@ impl std::fmt::Display for LineNumber {
 
 #[derive(Default)]
 pub struct BuildContext {
-    gates: HashMap<String, Gate>,
-    links: HashSet<Link>,
+    mappings: HashMap<String, usize>,
+    gates: Vec<Gate>,
+    links: Vec<Vec<Link>>,
 }
 
 impl BuildContext {
-    pub fn new(gates: HashMap<String, Gate>, links: HashSet<Link>) -> Self {
-        Self { gates, links }
+    pub fn new(mappings: HashMap<String, usize>, gates: Vec<Gate>, links: Vec<Vec<Link>>) -> Self {
+        Self {
+            mappings,
+            gates,
+            links,
+        }
+    }
+
+    pub fn into_raw_parts(self) -> (HashMap<String, usize>, Vec<Gate>, Vec<Vec<Link>>) {
+        (self.mappings, self.gates, self.links)
     }
 }
 
 pub(crate) fn check(def: ast::Definition) -> Result<BuildContext, String> {
     use ast::{DirectiveItem, GateDef, LinkDef};
 
-    let mut gates: HashMap<String, Gate> = HashMap::default();
-    let mut links: HashSet<Link> = HashSet::default();
+    let mut mappings: HashMap<String, usize> = HashMap::default();
+    let mut gates: Vec<Gate> = vec![];
+    let mut links: Vec<Vec<Link>> = vec![];
     let directives = def.as_ref();
 
     for (line, di) in directives.iter().map(|d| &d.0).enumerate() {
-        if let DirectiveItem::GateDef(GateDef { identifier, ty }) = di {
-            gates
-                .insert(identifier.to_string(), Gate::new(*ty))
-                .ok_or_else(|| {
-                    format!(
-                        "{} gate id ({}) already defined",
-                        LineNumber(line),
-                        identifier.as_ref()
-                    )
+        match di {
+            DirectiveItem::GateDef(GateDef { identifier, ty }) => {
+                if let DirectiveItem::GateDef(GateDef { identifier, ty }) = di {
+                    let next_idx = gates.len();
+                    if !mappings.contains_key(identifier.as_ref()) {
+                        mappings.insert(identifier.to_string(), next_idx);
+                        gates.push(Gate::new(*ty));
+                        links.resize(next_idx, vec![])
+                    } else {
+                        return Err(format!(
+                            "{} gate id ({}) already defined",
+                            LineNumber(line),
+                            identifier.as_ref()
+                        ));
+                    };
+                }
+            }
+            DirectiveItem::LinkDef(LinkDef { src, dest, input }) => {
+                let &src_idx = mappings
+                    .get(src.as_ref())
+                    .ok_or_else(|| format!("{} source gate ({}) undefined", line, src.as_ref()))?;
+
+                let &dest_idx = mappings.get(dest.as_ref()).ok_or_else(|| {
+                    format!("{} destination gate ({}) undefined", line, dest.as_ref())
                 })?;
-        }
-    }
+                let dest_ty = gates.get(dest_idx).ok_or_else(|| {
+                    format!("{} destination gate ({}) undefined", line, dest.as_ref())
+                })?;
 
-    for (line, di) in directives.iter().map(|d| &d.0).enumerate() {
-        if let DirectiveItem::LinkDef(LinkDef { src, dest, input }) = di {
-            let (src_id, _) = gates.get_key_value(src.as_ref()).ok_or_else(|| {
-                format!("{} source gate ({}) undefined defined", line, src.as_ref())
-            })?;
-
-            let dest_ty = gates
-                .get(dest.as_ref())
-                .ok_or_else(|| format!("{} destination gate ({}) defined", line, src.as_ref()))?;
-
-            let min = 'a' as u32;
-            let max = min + dest_ty.inputs();
-            let input_offset = input.as_char() as u32;
-            if !(input_offset >= min && input_offset < max) {
-                return Err(format!(
-                    "{} input exceeds maxinum allowable input of {} for gate ({})",
-                    line,
-                    dest_ty.inputs(),
-                    dest.as_ref()
-                ));
-            } else {
-                links.insert(Link::new(
-                    src_id.to_string(),
-                    dest.to_string(),
-                    input.as_char(),
-                ));
+                let min = 'a' as u32;
+                let max = min + dest_ty.inputs();
+                let input_offset = input.as_char() as u32;
+                if !(input_offset >= min && input_offset < max) {
+                    return Err(format!(
+                        "{} input exceeds maxinum allowable input of {} for gate ({})",
+                        line,
+                        dest_ty.inputs(),
+                        dest.as_ref()
+                    ));
+                } else {
+                    links
+                        .get_mut(src_idx)
+                        .map(|outbound_links| {
+                            outbound_links.push(Link::new(
+                                src.as_ref().to_string(),
+                                dest.to_string(),
+                                input.as_char(),
+                            ));
+                        })
+                        .ok_or_else(|| {
+                            format!("{} no links defined for src gate ({})", line, src.as_ref())
+                        });
+                }
             }
         }
     }
 
-    Ok(BuildContext::new(gates, links))
+    Ok(BuildContext::new(mappings, gates, links))
 }

@@ -38,9 +38,9 @@ pub enum GateTy {
     Nor,
 }
 
-impl From<GateTy> for &str {
-    fn from(gt: GateTy) -> Self {
-        match gt {
+impl GateTy {
+    pub fn as_str(&self) -> &'static str {
+        match self {
             GateTy::Not => "not",
             GateTy::And => "and",
             GateTy::Or => "or",
@@ -48,6 +48,12 @@ impl From<GateTy> for &str {
             GateTy::Nand => "nand",
             GateTy::Nor => "nor",
         }
+    }
+}
+
+impl From<GateTy> for &str {
+    fn from(gt: GateTy) -> Self {
+        gt.as_str()
     }
 }
 
