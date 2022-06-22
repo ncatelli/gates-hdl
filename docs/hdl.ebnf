@@ -13,7 +13,7 @@ GateTy ::= "not"
 	| "nand"
 	| "nor"
 
-GateIdentifier ::= [a-z_]+
+GateIdentifier ::= [a-z] [a-z_]+
 
 LinkDef ::= "LINK" GateIdentifier "->" InputIdentifier "OF" GateIdentifier 
 
