@@ -26,7 +26,7 @@ struct Service {
 }
 
 impl Service {
-    const GATES_IMG: &'static str = "ghcr.io/ncatelli/gates:latest";
+    const GATES_IMG: &'static str = "ghcr.io/ncatelli/gates:main";
 
     fn new(command: Command, healthcheck: HealthCheck) -> Self {
         Self {
