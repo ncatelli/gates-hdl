@@ -5,19 +5,6 @@ const srcInputTextObject = document.getElementById("compileInput");
 const compileBtn = document.getElementById("compileBtn");
 const composeOutputTextObject = document.getElementById("composeOutput");
 
-function download(filename, contentType, data) {
-    var element = document.createElement('a');
-    element.setAttribute('href', contentType + encodeURIComponent(data));
-    element.setAttribute('download', filename);
-
-    element.style.display = 'none';
-    document.body.appendChild(element);
-
-    element.click();
-
-    document.body.removeChild(element);
-}
-
 function compileSource(source) {
     var output = wasm.compile_compose(source);
 
@@ -30,8 +17,4 @@ compileBtn.addEventListener("click", event => {
 
     // update text area with output
     composeOutputTextObject.textContent = composeOutput;
-
-    // Start file download.
-    var composeOutput = Buffer.from(composeOutput).toString();
-    download("docker-compose.yaml", 'text/yaml', composeOutput);
 });
