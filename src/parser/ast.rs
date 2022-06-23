@@ -1,6 +1,12 @@
 #[derive(Debug, PartialEq)]
 pub struct Definition(pub Vec<Directive>);
 
+impl AsRef<[Directive]> for Definition {
+    fn as_ref(&self) -> &[Directive] {
+        &self.0
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub struct Directive(pub DirectiveItem);
 
@@ -12,8 +18,8 @@ pub enum DirectiveItem {
 
 #[derive(Debug, PartialEq)]
 pub struct GateDef {
-    identifier: GateIdentifier,
-    ty: GateTy,
+    pub identifier: GateIdentifier,
+    pub ty: GateTy,
 }
 
 impl GateDef {
@@ -22,7 +28,7 @@ impl GateDef {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GateTy {
     Not,
     And,
@@ -32,9 +38,9 @@ pub enum GateTy {
     Nor,
 }
 
-impl From<GateTy> for &str {
-    fn from(gt: GateTy) -> Self {
-        match gt {
+impl GateTy {
+    pub fn as_str(&self) -> &'static str {
+        match self {
             GateTy::Not => "not",
             GateTy::And => "and",
             GateTy::Or => "or",
@@ -42,6 +48,12 @@ impl From<GateTy> for &str {
             GateTy::Nand => "nand",
             GateTy::Nor => "nor",
         }
+    }
+}
+
+impl From<GateTy> for &str {
+    fn from(gt: GateTy) -> Self {
+        gt.as_str()
     }
 }
 
@@ -90,9 +102,9 @@ impl From<GateIdentifier> for String {
 
 #[derive(Debug, PartialEq)]
 pub struct LinkDef {
-    src: GateIdentifier,
-    dest: GateIdentifier,
-    input: InputIdentifier,
+    pub src: GateIdentifier,
+    pub dest: GateIdentifier,
+    pub input: InputIdentifier,
 }
 
 impl LinkDef {

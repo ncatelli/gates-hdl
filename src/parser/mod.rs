@@ -1,7 +1,7 @@
-use parcel::parsers::character::{any_character, expect_character, expect_str};
+use parcel::parsers::character::{any_character, eof, expect_character, expect_str, whitespace};
 use parcel::prelude::v1::*;
 
-mod ast;
+pub mod ast;
 
 #[derive(PartialEq)]
 #[allow(unused)]
@@ -35,7 +35,13 @@ fn definition<'a>() -> impl Parser<'a, &'a [(usize, char)], ast::Definition> {
 }
 
 fn directive<'a>() -> impl Parser<'a, &'a [(usize, char)], ast::Directive> {
-    directive_item().map(ast::Directive)
+    parcel::left(parcel::join(
+        directive_item().map(ast::Directive),
+        parcel::join(
+            expect_character(';'),
+            parcel::or(parcel::one_or_more(whitespace()).map(|_| '\n'), eof),
+        ),
+    ))
 }
 
 fn directive_item<'a>() -> impl Parser<'a, &'a [(usize, char)], ast::DirectiveItem> {
@@ -47,19 +53,19 @@ fn directive_item<'a>() -> impl Parser<'a, &'a [(usize, char)], ast::DirectiveIt
 fn gate_def<'a>() -> impl Parser<'a, &'a [(usize, char)], ast::GateDef> {
     parcel::join(
         parcel::right(parcel::join(
-            whitespace_wrapped(expect_str("DEFINE")),
-            whitespace_wrapped(gate_identifier()),
+            non_newline_whitespace_wrapped(expect_str("DEFINE")),
+            non_newline_whitespace_wrapped(gate_identifier()),
         )),
         parcel::right(parcel::join(
-            whitespace_wrapped(expect_str("AS")),
-            whitespace_wrapped(gate_ty()),
+            non_newline_whitespace_wrapped(expect_str("AS")),
+            non_newline_whitespace_wrapped(gate_ty()),
         )),
     )
     .map(|(id, ty)| ast::GateDef::new(id, ty))
 }
 
 fn gate_ty<'a>() -> impl Parser<'a, &'a [(usize, char)], ast::GateTy> {
-    whitespace_wrapped(parcel::one_of(vec![
+    non_newline_whitespace_wrapped(parcel::one_of(vec![
         expect_str("not").map(|_| ast::GateTy::Not),
         expect_str("and").map(|_| ast::GateTy::And),
         expect_str("or").map(|_| ast::GateTy::Or),
@@ -72,17 +78,17 @@ fn gate_ty<'a>() -> impl Parser<'a, &'a [(usize, char)], ast::GateTy> {
 fn link_def<'a>() -> impl Parser<'a, &'a [(usize, char)], ast::LinkDef> {
     parcel::join(
         parcel::right(parcel::join(
-            whitespace_wrapped(expect_str("LINK")),
-            whitespace_wrapped(gate_identifier()),
+            non_newline_whitespace_wrapped(expect_str("LINK")),
+            non_newline_whitespace_wrapped(gate_identifier()),
         )),
         parcel::join(
             parcel::right(parcel::join(
-                whitespace_wrapped(expect_str("->")),
-                whitespace_wrapped(input_identifier()),
+                non_newline_whitespace_wrapped(expect_str("->")),
+                non_newline_whitespace_wrapped(input_identifier()),
             )),
             parcel::right(parcel::join(
-                whitespace_wrapped(expect_str("OF")),
-                whitespace_wrapped(gate_identifier()),
+                non_newline_whitespace_wrapped(expect_str("OF")),
+                non_newline_whitespace_wrapped(gate_identifier()),
             )),
         ),
     )
@@ -109,16 +115,19 @@ fn input_identifier<'a>() -> impl Parser<'a, &'a [(usize, char)], ast::InputIden
         .map(ast::InputIdentifier::try_new_unchecked)
 }
 
-fn whitespace_wrapped<'a, P, B>(parser: P) -> impl Parser<'a, &'a [(usize, char)], B>
+fn non_newline_whitespace_wrapped<'a, P, B>(parser: P) -> impl Parser<'a, &'a [(usize, char)], B>
 where
     B: 'a,
     P: Parser<'a, &'a [(usize, char)], B> + 'a,
 {
-    use parcel::parsers::character::whitespace;
+    use parcel::parsers::character::non_newline_whitespace;
 
     parcel::right(parcel::join(
-        parcel::zero_or_more(whitespace()),
-        parcel::left(parcel::join(parser, parcel::zero_or_more(whitespace()))),
+        parcel::zero_or_more(non_newline_whitespace()),
+        parcel::left(parcel::join(
+            parser,
+            parcel::zero_or_more(non_newline_whitespace()),
+        )),
     ))
 }
 
@@ -132,7 +141,7 @@ mod tests {
         let inputs = vec![
             // gate definition
             (
-                "DEFINE gate AS and",
+                "DEFINE gate AS and;",
                 DirectiveItem::GateDef(GateDef::new(
                     GateIdentifier::try_new_unchecked("gate".to_string()),
                     GateTy::And,
@@ -140,7 +149,7 @@ mod tests {
             ),
             // link definition
             (
-                "LINK src -> a OF dest",
+                "LINK src -> a OF dest;",
                 DirectiveItem::LinkDef(LinkDef::new(
                     GateIdentifier::try_new_unchecked("src".to_string()),
                     GateIdentifier::try_new_unchecked("dest".to_string()),
@@ -161,9 +170,9 @@ mod tests {
     #[test]
     fn should_parse_multiline_definition() {
         let (input, expected) = (
-            "DEFINE src AS and
-DEFINE dest AS not
-LINK src -> a OF dest",
+            "DEFINE src AS and;
+DEFINE dest AS not;
+LINK src -> a OF dest;",
             vec![
                 Directive(DirectiveItem::GateDef(GateDef::new(
                     GateIdentifier::try_new_unchecked("src".to_string()),
@@ -187,7 +196,7 @@ LINK src -> a OF dest",
 
     #[test]
     fn should_fail_to_parse_gate_definition_with_invalid_id() {
-        let input = "DEFINE InVaLiD AS and";
+        let input = "DEFINE InVaLiD AS and;";
 
         let parse_result = parse(&input);
         assert!(parse_result.is_err())
@@ -195,7 +204,7 @@ LINK src -> a OF dest",
 
     #[test]
     fn should_fail_to_parse_link_definition_with_invalid_input_id() {
-        let input = "LINK src -> 1 OF dest";
+        let input = "LINK src -> 1 OF dest;";
 
         let parse_result = parse(&input);
         assert!(parse_result.is_err())
