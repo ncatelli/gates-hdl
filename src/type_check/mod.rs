@@ -1,6 +1,10 @@
 use crate::parser::ast;
 use std::collections::HashMap;
 
+mod ordered_hash_map;
+
+use ordered_hash_map::OrderedHashMap;
+
 pub struct Gate {
     ty: ast::GateTy,
 }
@@ -57,13 +61,20 @@ impl std::fmt::Display for LineNumber {
 
 #[derive(Default)]
 pub struct BuildContext {
-    mappings: HashMap<String, usize>,
+    mappings: OrderedHashMap<String, usize>,
     gates: Vec<Gate>,
     links: Vec<Vec<Link>>,
 }
 
 impl BuildContext {
     pub fn new(mappings: HashMap<String, usize>, gates: Vec<Gate>, links: Vec<Vec<Link>>) -> Self {
+        let mappings = mappings
+            .into_iter()
+            .fold(OrderedHashMap::default(), |mut acc, (k, v)| {
+                acc.insert(k, v);
+                acc
+            });
+
         Self {
             mappings,
             gates,
@@ -71,7 +82,9 @@ impl BuildContext {
         }
     }
 
-    pub fn into_raw_parts(self) -> (HashMap<String, usize>, Vec<Gate>, Vec<Vec<Link>>) {
+    pub(crate) fn into_raw_parts(
+        self,
+    ) -> (OrderedHashMap<String, usize>, Vec<Gate>, Vec<Vec<Link>>) {
         (self.mappings, self.gates, self.links)
     }
 }

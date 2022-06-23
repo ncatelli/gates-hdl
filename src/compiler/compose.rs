@@ -95,7 +95,7 @@ impl crate::compiler::Compile for Compose {
     fn compile(input: Self::Input) -> Result<Self, String> {
         let (mappings, gates, links) = input.into_raw_parts();
         let gate_services = mappings
-            .into_keys()
+            .keys()
             .zip(gates.iter())
             .zip(links.into_iter())
             .map(|((id, ty), links)| {
@@ -111,7 +111,7 @@ impl crate::compiler::Compile for Compose {
             .fold(
                 HashMap::default(),
                 |mut acc: HashMap<String, Service>, (id, svc)| {
-                    acc.insert(id, svc);
+                    acc.insert(id.to_string(), svc);
                     acc
                 },
             );
