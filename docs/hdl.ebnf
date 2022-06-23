@@ -1,6 +1,6 @@
 Definition ::= Directive+
 
-Directive ::= DirectiveItem
+Directive ::= DirectiveItem ";" "\n"
 
 DirectiveItem ::= GateDef | LinkDef
 
