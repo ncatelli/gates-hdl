@@ -1,7 +1,14 @@
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use serde::Serialize;
+use std::{collections::HashMap, fmt::Debug};
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+use crate::Compile;
+
+pub fn compile(ctx: crate::type_check::BuildContext) -> Result<String, String> {
+    Compose::compile(ctx)
+        .and_then(|compose| serde_yaml::to_string(&compose).map_err(|e| format!("{:?}", e)))
+}
+
+#[derive(Debug, PartialEq, Serialize)]
 struct Compose {
     version: &'static str,
     services: HashMap<String, Service>,
@@ -18,7 +25,7 @@ impl Compose {
     }
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize)]
 struct Service {
     image: &'static str,
     command: Command,
@@ -37,7 +44,7 @@ impl Service {
     }
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize)]
 #[repr(transparent)]
 struct Command(String);
 
@@ -60,15 +67,18 @@ impl Command {
     }
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize)]
 struct HealthCheck {
-    test: String,
+    test: Vec<String>,
 }
 
 impl HealthCheck {
     fn new<S: AsRef<str>>(port: S) -> Self {
         Self {
-            test: format!("CMD curl -f http://127.0.0.1:{}/healthcheck", port.as_ref()),
+            test: format!("CMD curl -f http://127.0.0.1:{}/healthcheck", port.as_ref())
+                .split(' ')
+                .map(String::from)
+                .collect(),
         }
     }
 }
@@ -140,7 +150,11 @@ services: {}
 image: \"ghcr.io/ncatelli/gates:main\"
 command: \"not -listen-addr '0.0.0.0:8080'\"
 healthcheck:
-  test: \"CMD curl -f http://127.0.0.1:8080/healthcheck\"
+  test:
+    - CMD
+    - curl
+    - \"-f\"
+    - \"http://127.0.0.1:8080/healthcheck\"
 "
             .to_string()),
             out
@@ -158,7 +172,11 @@ healthcheck:
 image: \"ghcr.io/ncatelli/gates:main\"
 command: \"not -listen-addr '0.0.0.0:8080' -output-addrs 'http://and_gate:8080/input/a'\"
 healthcheck:
-  test: \"CMD curl -f http://127.0.0.1:8080/healthcheck\"
+  test:
+    - CMD
+    - curl
+    - \"-f\"
+    - \"http://127.0.0.1:8080/healthcheck\"
 "
             .to_string()),
             out
@@ -176,7 +194,11 @@ healthcheck:
 image: \"ghcr.io/ncatelli/gates:main\"
 command: \"not -listen-addr '0.0.0.0:8080' -output-addrs 'http://and_gate:8080/input/a,http://or_gate:8080/input/b'\"
 healthcheck:
-  test: \"CMD curl -f http://127.0.0.1:8080/healthcheck\"
+  test:
+    - CMD
+    - curl
+    - \"-f\"
+    - \"http://127.0.0.1:8080/healthcheck\"
 "
             .to_string()),
             out

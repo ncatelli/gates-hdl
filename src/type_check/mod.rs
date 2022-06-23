@@ -76,7 +76,7 @@ impl BuildContext {
     }
 }
 
-pub(crate) fn check(def: ast::Definition) -> Result<BuildContext, String> {
+pub fn check(def: ast::Definition) -> Result<BuildContext, String> {
     use ast::{DirectiveItem, GateDef, LinkDef};
 
     let mut mappings: HashMap<String, usize> = HashMap::default();
@@ -87,20 +87,18 @@ pub(crate) fn check(def: ast::Definition) -> Result<BuildContext, String> {
     for (line, di) in directives.iter().map(|d| &d.0).enumerate() {
         match di {
             DirectiveItem::GateDef(GateDef { identifier, ty }) => {
-                if let DirectiveItem::GateDef(GateDef { identifier, ty }) = di {
-                    let next_idx = gates.len();
-                    if !mappings.contains_key(identifier.as_ref()) {
-                        mappings.insert(identifier.to_string(), next_idx);
-                        gates.push(Gate::new(*ty));
-                        links.resize(next_idx, vec![])
-                    } else {
-                        return Err(format!(
-                            "{} gate id ({}) already defined",
-                            LineNumber(line),
-                            identifier.as_ref()
-                        ));
-                    };
-                }
+                let next_idx = gates.len();
+                if !mappings.contains_key(identifier.as_ref()) {
+                    mappings.insert(identifier.to_string(), next_idx);
+                    gates.push(Gate::new(*ty));
+                    links.push(vec![])
+                } else {
+                    return Err(format!(
+                        "{} gate id ({}) already defined",
+                        LineNumber(line),
+                        identifier.as_ref()
+                    ));
+                };
             }
             DirectiveItem::LinkDef(LinkDef { src, dest, input }) => {
                 let &src_idx = mappings
@@ -136,7 +134,7 @@ pub(crate) fn check(def: ast::Definition) -> Result<BuildContext, String> {
                         })
                         .ok_or_else(|| {
                             format!("{} no links defined for src gate ({})", line, src.as_ref())
-                        });
+                        })?;
                 }
             }
         }

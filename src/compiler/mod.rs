@@ -8,3 +8,5 @@ where
 
     fn compile(input: Self::Input) -> Result<Self, String>;
 }
+
+pub use compose::compile;
