@@ -16,8 +16,17 @@ cargo test
 ```
 
 ## Building
+### Locally
 ```bash
 cargo build --release
+```
+
+### Browser
+```bash
+wasm-pack build
+cd www/
+npm install
+npm run start
 ```
 
 ### Running
