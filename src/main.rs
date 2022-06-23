@@ -84,17 +84,8 @@ fn main() -> RuntimeResult<()> {
             let src_file = if args.len() == 1 { args.get(0) } else { None }
                 .ok_or(RuntimeError::FileNotSpecified)?;
 
-            let build_ctx = read_src_file(&(src_file.value))
-                .and_then(|input| {
-                    gates_hdl::parse(&input)
-                        .map_err(|e| RuntimeError::Undefined(format!("{:?}", e)))
-                })
-                .and_then(|ast| {
-                    gates_hdl::check(ast).map_err(|e| RuntimeError::Undefined(format!("{:?}", e)))
-                })?;
-
-            let output =
-                gates_hdl::compiler::compile(build_ctx).map_err(RuntimeError::Undefined)?;
+            let output = read_src_file(&(src_file.value))
+                .and_then(|src| gates_hdl::compile_compose(src).map_err(RuntimeError::Undefined))?;
 
             let sink = ouf
                 .map(|filename| {
