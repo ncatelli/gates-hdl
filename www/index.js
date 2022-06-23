@@ -27,6 +27,4 @@ compileBtn.addEventListener("click", event => {
     var generatedMermaid = generateMermaidInput(source);
     composeOutputTextObject.textContent = composeOutput;
     mermaid.render('graphDiv', generatedMermaid, insertSvg);
-
-
 });
