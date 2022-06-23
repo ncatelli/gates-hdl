@@ -1,4 +1,5 @@
 pub mod compose;
+pub mod mermaid;
 
 pub trait Compile
 where
