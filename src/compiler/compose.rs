@@ -33,7 +33,7 @@ struct Service {
 }
 
 impl Service {
-    const GATES_IMG: &'static str = "ghcr.io/ncatelli/gates:main";
+    const GATES_IMG: &'static str = "ghcr.io/ncatelli/gates:v0.1.0";
 
     fn new(command: Command, healthcheck: HealthCheck) -> Self {
         Self {
@@ -147,7 +147,7 @@ services: {}
         let out = serde_yaml::to_string(&service).map_err(|_| ());
         assert_eq!(
             Ok("---
-image: \"ghcr.io/ncatelli/gates:main\"
+image: \"ghcr.io/ncatelli/gates:v0.1.0\"
 command: \"not -listen-addr '0.0.0.0:8080'\"
 healthcheck:
   test:
@@ -169,7 +169,7 @@ healthcheck:
         let out = serde_yaml::to_string(&service).map_err(|_| ());
         assert_eq!(
             Ok("---
-image: \"ghcr.io/ncatelli/gates:main\"
+image: \"ghcr.io/ncatelli/gates:v0.1.0\"
 command: \"not -listen-addr '0.0.0.0:8080' -output-addrs 'http://and_gate:8080/input/a'\"
 healthcheck:
   test:
@@ -191,7 +191,7 @@ healthcheck:
         let out = serde_yaml::to_string(&service).map_err(|_| ());
         assert_eq!(
             Ok("---
-image: \"ghcr.io/ncatelli/gates:main\"
+image: \"ghcr.io/ncatelli/gates:v0.1.0\"
 command: \"not -listen-addr '0.0.0.0:8080' -output-addrs 'http://and_gate:8080/input/a,http://or_gate:8080/input/b'\"
 healthcheck:
   test:
