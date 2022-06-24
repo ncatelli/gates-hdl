@@ -28,3 +28,13 @@ compileBtn.addEventListener("click", event => {
     composeOutputTextObject.textContent = composeOutput;
     mermaid.render('graphDiv', generatedMermaid, insertSvg);
 });
+
+// set defaults
+srcInputTextObject.value = `DEFINE first_sum AS xor;
+DEFINE first_carry AS and;
+DEFINE second_sum AS xor;
+DEFINE second_carry AS and;
+DEFINE output AS or;
+LINK first_sum -> b OF second_sum;
+LINK first_sum -> a OF second_carry;
+LINK first_carry -> b OF output;`;
