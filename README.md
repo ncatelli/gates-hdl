@@ -1,6 +1,8 @@
 # gates-hdl
 An "HDL" for the https://github.com/ncatelli/gates submission to LLJam 0001
 
+A web frontend has been made available at https://ncatelli.github.io/gates-hdl/.
+
 ## Dependencies
 - rust 1.56+
 
