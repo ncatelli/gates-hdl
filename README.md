@@ -16,11 +16,21 @@ cargo test
 ```
 
 ## Building
+### Locally
 ```bash
 cargo build --release
 ```
 
+### Browser
+```bash
+$ wasm-pack build
+$ cd www/
+$ npm install
+$ npm run start
+```
+
 ### Running
+#### Locally
 A two gate example can be built with the following two commands
 
 ```bash
@@ -68,8 +78,6 @@ second_1  | 2022/06/23 15:10:45 Starting server on 0.0.0.0:8080
 second_1  | 2022/06/23 15:10:45 Configured as and gate
 second_1  | 2022/06/23 15:15:09 tick: 0, state: true
 ```
-
-
 
 ## Grammar
 The grammar can be found in the following representations:

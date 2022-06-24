@@ -25,6 +25,10 @@ impl Gate {
         }
     }
 
+    pub fn as_type(&self) -> ast::GateTy {
+        self.ty
+    }
+
     pub fn as_str(&self) -> &'static str {
         self.ty.into()
     }
